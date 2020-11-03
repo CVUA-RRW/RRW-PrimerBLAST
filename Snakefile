@@ -16,7 +16,8 @@ workdir: config["workdir"]
  
 rule all:
     input: 
-        "primer_blast/missing_barcodes.txt",
+        # "primer_blast/missing_barcodes.txt",
+        "primer_blast/no_barcodes.txt",
         "blast_db/barcodes.fasta",
         expand("blast_db/barcodeDB.{ext}", ext= ["nto", "ntf", "nsq", "not", "nos", "nog", "nin", "nhr", "ndb"]),
         "report.txt"
@@ -137,8 +138,8 @@ rule missing_barcodes:
         seqids = "db_filtering/seqids.txt",
         barcodes = "primer_blast/barcode_pos.tsv"
     output:
-        acc = temp("primer_blast/missing_seqids.txt"),
-        full = "primer_blast/missing_barcodes.txt"
+        acc = "primer_blast/no_barcodes.txt",
+        # full = "primer_blast/missing_barcodes.txt"
     message: "Identifying missing barcodes"
     params:
         blast_DB = config["blast_db"],
@@ -148,12 +149,12 @@ rule missing_barcodes:
         """
         comm -3 <(cat {input.seqids} | cut -d"." -f1 | sort -k1) <(cat {input.barcodes} | cut -d$'\t' -f1 | sort -k1) | tr -d "\t" > {output.acc}
         
-        export BLASTDB={params.taxdb}
+        # export BLASTDB={params.taxdb}
         
         # blastdbcmd -db {params.blast_DB} -entry_batch {output.acc} -outfmt '%i\t%t\t%T\t%L' > {output.full} # Fails in some cases for some unknown reason
-        while read line; do 
-            blastdbcmd -db {params.blast_DB} -entry $line -outfmt '%i\t%t\t%T\t%L' >> {output.full}
-        done < {output.acc}
+        # while read line; do 
+            # blastdbcmd -db {params.blast_DB} -entry $line -outfmt '%i\t%t\t%T\t%L' >> {output.full}
+        # done < {output.acc}
         """
 
 rule make_barcode_db:
@@ -187,7 +188,7 @@ rule write_report:
         txd_failed = "db_filtering/taxid_missing.txt",
         primers = config["primers"],
         fasta = "blast_db/barcodes.fasta",
-        missing = "primer_blast/missing_barcodes.txt"
+        missing = "primer_blast/no_barcodes.txt"
     output:
         "report.txt"
     params:
