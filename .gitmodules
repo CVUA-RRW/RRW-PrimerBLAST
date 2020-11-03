@@ -1,0 +1,3 @@
+[submodule "scripts/taxidTools"]
+	path = scripts/taxidTools
+	url = https://github.com/CVUA-RRW/taxidTools
