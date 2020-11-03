@@ -138,7 +138,7 @@ rule missing_barcodes:
         seqids = "db_filtering/seqids.txt",
         barcodes = "primer_blast/barcode_pos.tsv"
     output:
-        acc = "primer_blast/no_barcodes.txt",
+        acc = "primer_blast/no_barcodes.txt"
         # full = "primer_blast/missing_barcodes.txt"
     message: "Identifying missing barcodes"
     params:
@@ -148,14 +148,14 @@ rule missing_barcodes:
     shell:
         """
         comm -3 <(cat {input.seqids} | cut -d"." -f1 | sort -k1) <(cat {input.barcodes} | cut -d$'\t' -f1 | sort -k1) | tr -d "\t" > {output.acc}
-        
+        """
         # export BLASTDB={params.taxdb}
         
         # blastdbcmd -db {params.blast_DB} -entry_batch {output.acc} -outfmt '%i\t%t\t%T\t%L' > {output.full} # Fails in some cases for some unknown reason
         # while read line; do 
             # blastdbcmd -db {params.blast_DB} -entry $line -outfmt '%i\t%t\t%T\t%L' >> {output.full}
         # done < {output.acc}
-        """
+        
 
 rule make_barcode_db:
     input: 
