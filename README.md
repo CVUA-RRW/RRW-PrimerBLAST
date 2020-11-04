@@ -53,7 +53,7 @@ You can also modify the parameters already present in the file.
 Then run the pipeline with:
 
 ```bash 
-snakemake -s /path/to/FooDMe/Snakefile --config path/to/config.yaml --use-conda --conda-prefix path/to/your/conda/envs
+snakemake -s /path/to/FooDMe/Snakefile --configfile path/to/config.yaml --use-conda --conda-prefix path/to/your/conda/envs
 ```
 
 Consult [snakemake's documentation](https://snakemake.readthedocs.io/en/stable/) for more details.

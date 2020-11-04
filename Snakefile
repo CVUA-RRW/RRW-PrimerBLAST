@@ -2,9 +2,6 @@
 # BLAST database and a fasta file containing primers.
 
 
-import pandas as pd
-
-
 shell.executable("bash")
 
 
@@ -184,7 +181,7 @@ rule make_barcode_db:
 rule write_report:
     input:
         db_txd = "db_filtering/taxid_list.txt",
-        txd_mask = temp("db_filtering/taxid_mask.txt"),
+        txd_mask = "db_filtering/taxid_mask.txt",
         txd_failed = "db_filtering/taxid_missing.txt",
         primers = config["primers"],
         fasta = "blast_db/barcodes.fasta",
