@@ -1,6 +1,7 @@
 # Generates a BLAST formatted database of predicted amplicons from an existing
 # BLAST database and a fasta file containing primers.
 
+import os
 
 shell.executable("bash")
 
@@ -9,14 +10,21 @@ shell.executable("bash")
 
 workdir: config["workdir"]
 
+# Functions -----------------------------------------------------------------------------------------------------------------
+
+def generate_db_name():
+    path, dbname = os.path.split(config["blast_db"])
+    path, primername = os.path.split(config["primers"])
+    return dbname + '_' + primername.split('.')[0]
+
 # Input rule ----------------------------------------------------------------------------------------------------------------
  
 rule all:
     input: 
         # "primer_blast/missing_barcodes.txt",
         "primer_blast/no_barcodes.txt",
-        "blast_db/barcodes.fasta",
-        expand("blast_db/barcodeDB.{ext}", ext= ["nto", "ntf", "nsq", "not", "nos", "nog", "nin", "nhr", "ndb"]),
+        "blast_db/{name}.fasta".format(name = generate_db_name()),
+        expand("blast_db/{name}.{ext}", name = generate_db_name(), ext= ["nto", "ntf", "nsq", "not", "nos", "nog", "nin", "nhr", "ndb"]),
         "report.txt"
         
 # Workflow ------------------------------------------------------------------------------------------------------------------
@@ -81,6 +89,7 @@ rule find_primer_matches:
         taxdb = config["taxdb"],
         cov = config["primerBlast_coverage"],
         identity = config["primerBlast_identity"]
+    threads: workflow.cores
     message:
         "Blasting primers"
     conda: "./envs/blast.yaml"
@@ -89,13 +98,14 @@ rule find_primer_matches:
         export BLASTDB={params.taxdb}
         
         blastn -db {params.blast_DB} \
-            -query /home/debian/NGS/spezies_indev/barcode_analysis/16S_primers_AGES.fa \
+            -query {input.primers} \
             -task blastn-short \
             -seqidlist {input.binary} \
             -outfmt '6 sacc qseqid staxid sstart send length sstrand mismatch' \
             -ungapped -qcov_hsp_perc {params.cov} -perc_identity {params.identity} \
             -subject_besthit \
             -max_target_seqs  1000000000 \
+            -num_threads {threads} \
                 | sort -k1 | sed '1 i\seqid\tquery\ttaxid\tstart\tend\tlength\tstrand\tmismatch' > {output}
         """
 
@@ -112,7 +122,7 @@ rule extract_barcodes_seq:
     input:
         "primer_blast/barcode_pos.tsv"
     output:
-        "blast_db/barcodes.fasta"
+        "blast_db/{name}.fasta"
     message: "Extracting barcode sequences"
     params:
         blast_DB = config["blast_db"],
@@ -146,22 +156,15 @@ rule missing_barcodes:
         """
         comm -3 <(cat {input.seqids} | cut -d"." -f1 | sort -k1) <(cat {input.barcodes} | cut -d$'\t' -f1 | sort -k1) | tr -d "\t" > {output.acc}
         """
-        # export BLASTDB={params.taxdb}
-        
-        # blastdbcmd -db {params.blast_DB} -entry_batch {output.acc} -outfmt '%i\t%t\t%T\t%L' > {output.full} # Fails in some cases for some unknown reason
-        # while read line; do 
-            # blastdbcmd -db {params.blast_DB} -entry $line -outfmt '%i\t%t\t%T\t%L' >> {output.full}
-        # done < {output.acc}
-        
 
 rule make_barcode_db:
     input: 
         barcodes = "primer_blast/barcode_pos.tsv",
-        fasta = "blast_db/barcodes.fasta"
+        fasta = "blast_db/{name}.fasta".format(name=generate_db_name())
     output:
         seqids = temp("blast_db/barcode_ids.txt"),
         taxids = temp("blast_db/tax.txt"),
-        DB = expand("blast_db/barcodeDB.{ext}", ext= ["nto", "ntf", "nsq", "not", "nos", "nog", "nin", "nhr", "ndb"])
+        DB = expand("blast_db/{name}.{ext}", name = generate_db_name(), ext= ["nto", "ntf", "nsq", "not", "nos", "nog", "nin", "nhr", "ndb"])
     params: 
         blast_DB = config["blast_db"],
         taxdb = config["taxdb"]
@@ -184,7 +187,7 @@ rule write_report:
         txd_mask = "db_filtering/taxid_mask.txt",
         txd_failed = "db_filtering/taxid_missing.txt",
         primers = config["primers"],
-        fasta = "blast_db/barcodes.fasta",
+        fasta = "blast_db/{name}.fasta".format(name=generate_db_name()),
         missing = "primer_blast/no_barcodes.txt"
     output:
         "report.txt"

@@ -7,6 +7,6 @@ nodes_dmp:                  # Path to nodes.dmp
 primers:                    # Path to the primer sequence files (in FASTA), any number of primers is acceptable
 
 # Modify the parameters below:
-parent_node: 32524          # Ancestor node to pre-filter BLAST database, 1 to ignore
+parent_node: 1              # Ancestor node to pre-filter BLAST database, 1 to ignore
 primerBlast_coverage: 100   # Minimal query coverage for primer BLAST (0-100)
 primerBlast_identity: 100   # Minimal sequence identity value for primer BLAST (0-100)
