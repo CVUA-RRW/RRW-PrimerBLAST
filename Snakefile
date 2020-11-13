@@ -12,7 +12,7 @@ workdir: config["workdir"]
 
 # Functions -----------------------------------------------------------------------------------------------------------------
 
-def generate_db_name():
+def generate_db_name(wildcards=None):
     path, dbname = os.path.split(config["blast_db"])
     path, primername = os.path.split(config["primers"])
     return dbname + '_' + primername.split('.')[0]
@@ -167,7 +167,8 @@ rule make_barcode_db:
         DB = expand("blast_db/{name}.{ext}", name = generate_db_name(), ext= ["nto", "ntf", "nsq", "not", "nos", "nog", "nin", "nhr", "ndb"])
     params: 
         blast_DB = config["blast_db"],
-        taxdb = config["taxdb"]
+        taxdb = config["taxdb"],
+        dbname = generate_db_name
     message: "Formatting barcodes to BLAST database"
     conda: "./envs/blast.yaml"
     shell:
@@ -178,7 +179,7 @@ rule make_barcode_db:
         
         blastdbcmd -db {params.blast_DB} -entry_batch {output.seqids} -outfmt '%i %T' > {output.taxids}
         
-        makeblastdb -in {input.fasta} -dbtype nucl -parse_seqids -blastdb_version 5 -taxid_map {output.taxids} -out blast_db/barcodeDB
+        makeblastdb -in {input.fasta} -dbtype nucl -parse_seqids -blastdb_version 5 -taxid_map {output.taxids} -out blast_db/{params.dbname}
         """
 
 rule write_report:
