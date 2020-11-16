@@ -105,7 +105,7 @@ rule find_primer_matches:
             -query {input.primers} \
             -task blastn-short \
             -seqidlist {input.binary} \
-            -outfmt '6 sseqid qseqid staxid sstart send length sstrand mismatch' \
+            -outfmt '6 saccver qseqid staxid sstart send length sstrand mismatch' \
             -ungapped -qcov_hsp_perc {params.cov} -perc_identity {params.identity} \
             -subject_besthit \
             -max_target_seqs  1000000000 \
@@ -144,11 +144,11 @@ rule extract_barcodes_seq:
         done < {input}
         """
 
-rule missing_barcodes:
+rule missing_barcodes: 
     input:
         seqids = "db_filtering/seqids.txt",
         barcodes = "primer_blast/barcode_pos.tsv",
-        table = "db_filtering/table.tsv"
+        table = "db_filtering/table.tsv" 
     output:
         acc = temp("primer_blast/no_barcodes.txt"),
         full = "primer_blast/missing_barcodes.txt"
@@ -159,14 +159,13 @@ rule missing_barcodes:
     conda: "./envs/blast.yaml"
     shell:
         """
-        comm -3 <(cat {input.barcodes} | cut -d$'\t' -f1 | sort -k1) \
+        
+        comm -13 <(cat {input.barcodes} | cut -d$'\t' -f1 | sort -k1) \
                 <(cat {input.seqids} | sort -k1) \
                 | tr -d "\t" \
                 > {output.acc}
         
-        join <(cat {output.acc} | sort -b -k1) \
-             <(cat {input.table} | sort -b -k1) \
-             > {output.full}
+         join --nocheck-order <(sort -b -k1d {input.table}) <(sort -b -k1d {output.acc}) > {output.full}
         """
 
 rule make_barcode_db:
@@ -175,7 +174,8 @@ rule make_barcode_db:
         id_table = "db_filtering/table.tsv"
     output:
         taxid_mapper = temp("blast_db/taxmap.tsv"),
-        DB = expand("blast_db/{name}.{ext}", name = generate_db_name(), ext= ["nto", "ntf", "nsq", "not", "nos", "nog", "nin", "nhr", "ndb"])
+        DB = expand("blast_db/{name}.{ext}", name = generate_db_name(), 
+                    ext= ["nto", "ntf", "nsq", "not", "nos", "nog", "nin", "nhr", "ndb"])
     params: 
         blast_DB = config["blast_db"],
         taxdb = config["taxdb"],
