@@ -4,4 +4,4 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - blast=2.9.0
+  - blast=2.10.1

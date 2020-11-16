@@ -63,7 +63,8 @@ rule get_seqidlist:
         "db_filtering/taxid_mask.txt"
     output:
         seqids = temp("db_filtering/seqids.txt"),
-        binary = temp("db_filtering/seqids.acc")
+        binary = temp("db_filtering/seqids.acc"),
+        id_table = temp("db_filtering/table.tsv")
     params:
         blast_DB = config["blast_db"],
         taxdb = config["taxdb"]
@@ -73,7 +74,10 @@ rule get_seqidlist:
         """
         export BLASTDB={params.taxdb}
         
-        blastdbcmd -db {params.blast_DB} -taxidlist {input} -outfmt '%i' > {output.seqids}
+        blastdbcmd -db {params.blast_DB} -taxidlist {input} -outfmt '%a\t%T\t%S' > {output.id_table}
+        
+        cat {output.id_table} | cut -d$'\t' -f1 > {output.seqids}
+        
         blastdb_aliastool -seqid_file_in {output.seqids} -seqid_file_out {output.binary}
         """
 
@@ -101,7 +105,7 @@ rule find_primer_matches:
             -query {input.primers} \
             -task blastn-short \
             -seqidlist {input.binary} \
-            -outfmt '6 sacc qseqid staxid sstart send length sstrand mismatch' \
+            -outfmt '6 sseqid qseqid staxid sstart send length sstrand mismatch' \
             -ungapped -qcov_hsp_perc {params.cov} -perc_identity {params.identity} \
             -subject_besthit \
             -max_target_seqs  1000000000 \
@@ -143,10 +147,11 @@ rule extract_barcodes_seq:
 rule missing_barcodes:
     input:
         seqids = "db_filtering/seqids.txt",
-        barcodes = "primer_blast/barcode_pos.tsv"
+        barcodes = "primer_blast/barcode_pos.tsv",
+        table = "db_filtering/table.tsv"
     output:
-        acc = "primer_blast/no_barcodes.txt"
-        # full = "primer_blast/missing_barcodes.txt"
+        acc = temp("primer_blast/no_barcodes.txt"),
+        full = "primer_blast/missing_barcodes.txt"
     message: "Identifying missing barcodes"
     params:
         blast_DB = config["blast_db"],
@@ -154,16 +159,22 @@ rule missing_barcodes:
     conda: "./envs/blast.yaml"
     shell:
         """
-        comm -3 <(cat {input.seqids} | cut -d"." -f1 | sort -k1) <(cat {input.barcodes} | cut -d$'\t' -f1 | sort -k1) | tr -d "\t" > {output.acc}
+        comm -3 <(cat {input.barcodes} | cut -d$'\t' -f1 | sort -k1) \
+                <(cat {input.seqids} | sort -k1) \
+                | tr -d "\t" \
+                > {output.acc}
+        
+        join <(cat {output.acc} | sort -b -k1) \
+             <(cat {input.table} | sort -b -k1) \
+             > {output.full}
         """
 
 rule make_barcode_db:
     input: 
-        barcodes = "primer_blast/barcode_pos.tsv",
-        fasta = "blast_db/{name}.fasta".format(name=generate_db_name())
+        fasta = "blast_db/{name}.fasta".format(name=generate_db_name()),
+        id_table = "db_filtering/table.tsv"
     output:
-        seqids = temp("blast_db/barcode_ids.txt"),
-        taxids = temp("blast_db/tax.txt"),
+        taxid_mapper = temp("blast_db/taxmap.tsv"),
         DB = expand("blast_db/{name}.{ext}", name = generate_db_name(), ext= ["nto", "ntf", "nsq", "not", "nos", "nog", "nin", "nhr", "ndb"])
     params: 
         blast_DB = config["blast_db"],
@@ -175,11 +186,9 @@ rule make_barcode_db:
         """
         export BLASTDB={params.taxdb}
         
-        cat {input.barcodes} | cut -d$'\t' -f1 > {output.seqids}
+        cat {input.id_table} | cut -d$'\t' -f1,2 > {output.taxid_mapper}
         
-        blastdbcmd -db {params.blast_DB} -entry_batch {output.seqids} -outfmt '%i %T' > {output.taxids}
-        
-        makeblastdb -in {input.fasta} -dbtype nucl -parse_seqids -blastdb_version 5 -taxid_map {output.taxids} -out blast_db/{params.dbname}
+        makeblastdb -in {input.fasta} -dbtype nucl -parse_seqids -blastdb_version 5 -taxid_map {output.taxid_mapper} -out blast_db/{params.dbname}
         """
 
 rule write_report:
