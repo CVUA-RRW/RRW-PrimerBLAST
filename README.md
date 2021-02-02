@@ -30,7 +30,7 @@ git clone --recurse-submodules https://github.com/CVUA-RRW/RRW-PrimerBLAST.git
 Set up a conda environment containing snakemake, python and the pandas library and activate it:
 
 ```bash
-conda create --name snakemake -c bioconda -c anaconda snakemake pandas
+conda create --name snakemake -c bioconda -c anaconda snakemake pandas biopython
 conda activate snakemake
 ```
 

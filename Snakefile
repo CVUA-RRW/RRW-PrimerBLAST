@@ -81,11 +81,21 @@ rule get_seqidlist:
         blastdb_aliastool -seqid_file_in {output.seqids} -seqid_file_out {output.binary}
         """
 
+rule primers_explicit:
+    input:
+        config["primers"]
+    output:
+        "primers_explicit.fa"
+    message:
+        "Disambiguating primers"
+    script:
+        "scripts/IUPAC_translate.py"
+
 rule find_primer_matches:
     input:
         seqids = "db_filtering/seqids.txt",
         binary = "db_filtering/seqids.acc",
-        primers = config["primers"]
+        primers = "primers_explicit.fa"
     output:
         "primer_blast/primer_blast.tsv"
     params:
@@ -165,7 +175,7 @@ rule missing_barcodes:
                 | tr -d "\t" \
                 > {output.acc}
         
-         join --nocheck-order <(sort -b -k1d {input.table}) <(sort -b -k1d {output.acc}) > {output.full}
+         join --nocheck-order -t $'\t' <(sort -b -k1d {input.table}) <(sort -b -k1d {output.acc}) > {output.full}
         """
 
 rule make_barcode_db:
