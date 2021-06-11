@@ -1,3 +1,5 @@
+https://zenodo.org/badge/DOI/10.5281/zenodo.4926145.svg
+
 # RRW-PrimerBLAST
 
 This pipeline emulates a Primer-BLAST to find primer matching sequences in a nucleotide 
@@ -117,6 +119,6 @@ This project is licensed under a BSD 3-Clauses License, see the LICENSE file for
 
 For questions about the pipeline, problems, suggestions or requests, feel free to contact:
 
-GrÈgoire Denay, Chemisches- und Veterin‰r-Untersuchungsamt Rhein-Ruhr-Wupper 
+Gr√©goire Denay, Chemisches- und Veterin√§r-Untersuchungsamt Rhein-Ruhr-Wupper 
 
 <gregoire.denay@cvua-rrw.de>
