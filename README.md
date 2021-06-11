@@ -1,5 +1,3 @@
-https://zenodo.org/badge/DOI/10.5281/zenodo.4926145.svg
-
 # RRW-PrimerBLAST
 
 This pipeline emulates a Primer-BLAST to find primer matching sequences in a nucleotide 
